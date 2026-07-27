@@ -1,0 +1,109 @@
+{
+	"Name": "My Estimate",
+	"Total Cost": {
+		"monthly": "107.96",
+		"upfront": "0.00",
+		"12 months": "1295.52"
+	},
+	"Metadata": {
+		"Currency": "USD",
+		"Locale": "en_US",
+		"Created On": "7/27/2026",
+		"Legal Disclaimer": "AWS Pricing Calculator provides only an estimate of your AWS fees and doesn't include any taxes that might apply. Your actual fees depend on a variety of factors, including your actual usage of AWS services.",
+		"Share Url": "https://calculator.aws/#/estimate?id=8b262baac07eae2dd5510fad8686e70c7ce680c1"
+	},
+	"Groups": {
+		"Services": [
+			{
+				"Service Name": "AWS Fargate",
+				"Region": "US East (N. Virginia)",
+				"Status": "",
+				"Service Cost": {
+					"monthly": "18.01",
+					"upfront": "0.00",
+					"12 months": "216.12"
+				},
+				"Properties": {
+					"Operating system": "Linux",
+					"CPU Architecture": "x86",
+					"Average duration": "24 hours",
+					"Number of tasks or pods": "2 per day",
+					"Amount of ephemeral storage allocated for Amazon ECS": "20 GB"
+				}
+			},
+			{
+				"Service Name": "Application Load Balancer",
+				"Region": "US East (N. Virginia)",
+				"Status": "",
+				"Service Cost": {
+					"monthly": "22.27",
+					"upfront": "0.00",
+					"12 months": "267.24"
+				},
+				"Properties": {
+					"Number of Application Load Balancers": "1"
+				}
+			},
+			{
+				"Service Name": "Amazon RDS for MySQL",
+				"Region": "US East (N. Virginia)",
+				"Status": "",
+				"Service Cost": {
+					"monthly": "64.06",
+					"upfront": "0.00",
+					"12 months": "768.72"
+				},
+				"Properties": {
+					"Storage amount": "100 GB",
+					"Storage for each RDS instance": "General Purpose SSD (gp2)",
+					"Nodes": "1",
+					"Instance type": "db.t3.micro",
+					"Utilization (On-Demand only)": "100 %Utilized/Month",
+					"Deployment option": "Single-AZ",
+					"Pricing strategy": "OnDemand"
+				}
+			},
+			{
+				"Service Name": "Amazon Elastic Container Registry",
+				"Region": "US East (N. Virginia)",
+				"Status": "",
+				"Service Cost": {
+					"monthly": "0.10",
+					"upfront": "0.00",
+					"12 months": "1.20"
+				},
+				"Properties": {
+					"Amount of data stored": "1 GB per month"
+				}
+			},
+			{
+				"Service Name": "AWS CodePipeline",
+				"Region": "US East (N. Virginia)",
+				"Status": "",
+				"Service Cost": {
+					"monthly": "1.00",
+					"upfront": "0.00",
+					"12 months": "12.00"
+				},
+				"Properties": {
+					"Number of active pipelines of type V1 used per account per month": "2"
+				}
+			},
+			{
+				"Service Name": "Amazon CloudWatch",
+				"Region": "US East (N. Virginia)",
+				"Status": "",
+				"Service Cost": {
+					"monthly": "2.52",
+					"upfront": "0.00",
+					"12 months": "30.27"
+				},
+				"Properties": {
+					"Number of mobile OTEL events and spans or spans per visit": "70",
+					"Mobile sampling rate": "1",
+					"Standard Logs: Data Ingested": "5 GB"
+				}
+			}
+		]
+	}
+}
