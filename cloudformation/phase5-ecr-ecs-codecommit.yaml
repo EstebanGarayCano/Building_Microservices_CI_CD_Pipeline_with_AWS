@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Phase 5 - ECR repositories (customer + employee), ECS Fargate cluster
+  (microservices-serverlesscluster), and CodeCommit repository (deployment).
+  Pre-requisites: LabVPC, PublicSubnet1, PublicSubnet2 must already exist.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: ID of LabVPC
+
+  PublicSubnet1Id:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID of PublicSubnet1
+
+  PublicSubnet2Id:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID of PublicSubnet2
+
+Resources:
+
+  # -------------------------------------------------------
+  # ECR Repositories
+  # -------------------------------------------------------
+  CustomerECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: customer
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 5 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 5
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      RepositoryPolicyText:
+        Version: '2008-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 'ecr:*'
+
+  EmployeeECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: employee
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 5 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 5
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      RepositoryPolicyText:
+        Version: '2008-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 'ecr:*'
+
+  # -------------------------------------------------------
+  # ECS Fargate Cluster
+  # -------------------------------------------------------
+  MicroservicesCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: microservices-serverlesscluster
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  # -------------------------------------------------------
+  # CodeCommit repository: deployment configuration files
+  # -------------------------------------------------------
+  DeploymentRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: deployment
+      RepositoryDescription: >
+        Task definition files and AppSpec files for CodeDeploy blue/green deployments.
+
+Outputs:
+  CustomerECRUri:
+    Description: URI of the customer ECR repository
+    Value: !GetAtt CustomerECRRepository.RepositoryUri
+    Export:
+      Name: CustomerECRUri
+
+  EmployeeECRUri:
+    Description: URI of the employee ECR repository
+    Value: !GetAtt EmployeeECRRepository.RepositoryUri
+    Export:
+      Name: EmployeeECRUri
+
+  CustomerECRArn:
+    Description: ARN of the customer ECR repository
+    Value: !GetAtt CustomerECRRepository.Arn
+    Export:
+      Name: CustomerECRArn
+
+  EmployeeECRArn:
+    Description: ARN of the employee ECR repository
+    Value: !GetAtt EmployeeECRRepository.Arn
+    Export:
+      Name: EmployeeECRArn
+
+  ECSClusterName:
+    Description: Name of the ECS Fargate cluster
+    Value: !Ref MicroservicesCluster
+    Export:
+      Name: ECSClusterName
+
+  ECSClusterArn:
+    Description: ARN of the ECS Fargate cluster
+    Value: !GetAtt MicroservicesCluster.Arn
+    Export:
+      Name: ECSClusterArn
+
+  DeploymentRepoCloneUrl:
+    Description: HTTPS clone URL for the deployment CodeCommit repository
+    Value: !GetAtt DeploymentRepo.CloneUrlHttp
+    Export:
+      Name: DeploymentRepoCloneUrl
+
+  DeploymentRepoArn:
+    Description: ARN of the deployment CodeCommit repository
+    Value: !GetAtt DeploymentRepo.Arn
+    Export:
+      Name: DeploymentRepoArn

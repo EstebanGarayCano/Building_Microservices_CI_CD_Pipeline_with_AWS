@@ -1,0 +1,14 @@
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Environment files
+.env
+*.env
+
+# OS
+.DS_Store
+
+# AWS credentials (never commit)
+.aws/
+credentials
