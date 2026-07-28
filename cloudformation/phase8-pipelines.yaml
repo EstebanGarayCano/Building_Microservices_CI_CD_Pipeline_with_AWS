@@ -15,8 +15,6 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "codepipeline-artifacts-${AWS::AccountId}-${AWS::Region}"
-      VersioningConfiguration:
-        Status: Enabled
 
   # ============================================================
   # Task 8.2 - Pipeline: update-customer-microservice
