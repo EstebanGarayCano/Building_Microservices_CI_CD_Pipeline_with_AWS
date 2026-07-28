@@ -1,48 +1,70 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Phase 5 - Task 5.2: ECS Fargate cluster (microservices-serverlesscluster).
-  Run this template if the ECS cluster needs to be recreated.
-  Prerequisites: LabVPC with PublicSubnet1 and PublicSubnet2 must exist.
-
-Parameters:
-  VpcId:
-    Type: AWS::EC2::VPC::Id
-    Description: LabVPC ID. Find it at VPC > Your VPCs > filter by name "LabVPC".
-
-  PublicSubnet1Id:
-    Type: AWS::EC2::Subnet::Id
-    Description: ID of PublicSubnet1 inside LabVPC.
-
-  PublicSubnet2Id:
-    Type: AWS::EC2::Subnet::Id
-    Description: ID of PublicSubnet2 inside LabVPC.
+  Phase 5 - Tasks 5.1 + 5.2: ECR repositories (customer, employee) + ECS Fargate cluster.
+  Run this template if ECR repos or the ECS cluster need to be recreated.
+  No VPC or subnet configuration needed for this stack.
 
 Resources:
 
+  # ECR repository for customer microservice
+  CustomerECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: customer
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 5 images",
+          "selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":5},
+          "action":{"type":"expire"}}]}
+      RepositoryPolicyText:
+        Version: "2008-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "ecr:*"
+
+  # ECR repository for employee microservice
+  EmployeeECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: employee
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 5 images",
+          "selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":5},
+          "action":{"type":"expire"}}]}
+      RepositoryPolicyText:
+        Version: "2008-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "ecr:*"
+
+  # ECS Fargate cluster
   MicroservicesCluster:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: microservices-serverlesscluster
-      CapacityProviders:
-        - FARGATE
-        - FARGATE_SPOT
-      DefaultCapacityProviderStrategy:
-        - CapacityProvider: FARGATE
-          Weight: 1
       ClusterSettings:
         - Name: containerInsights
           Value: disabled
 
 Outputs:
 
+  CustomerECRUri:
+    Description: ECR URI for customer image
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/customer"
+    Export:
+      Name: ECR-CustomerUri
+
+  EmployeeECRUri:
+    Description: ECR URI for employee image
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/employee"
+    Export:
+      Name: ECR-EmployeeUri
+
   ClusterName:
     Description: ECS Cluster name
     Value: !Ref MicroservicesCluster
     Export:
       Name: ECS-ClusterName
-
-  ClusterArn:
-    Description: ECS Cluster ARN
-    Value: !GetAtt MicroservicesCluster.Arn
-    Export:
-      Name: ECS-ClusterArn
