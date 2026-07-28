@@ -53,7 +53,7 @@ Resources:
               - Name: customer-tg-two
               - Name: customer-tg-one
       ECSServices:
-        - ClusterName: !ImportValue ECS-ClusterName
+        - ClusterName: microservices-serverlesscluster
           ServiceName: customer-microservice
 
   # ============================================================
@@ -92,7 +92,7 @@ Resources:
               - Name: employee-tg-two
               - Name: employee-tg-one
       ECSServices:
-        - ClusterName: !ImportValue ECS-ClusterName
+        - ClusterName: microservices-serverlesscluster
           ServiceName: employee-microservice
 
 Outputs:
