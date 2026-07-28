@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Phase 6 - Tasks 6.1 + 6.2:
+    - 4 Target Groups (customer-tg-one/two, employee-tg-one/two)
+    - Security Group microservices-sg (ports 80 and 8080)
+    - ALB microservicesLB (internet-facing)
+    - Listeners on ports 80 and 8080 with path-based routing rules
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: LabVPC ID
+
+  PublicSubnet1Id:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID of PublicSubnet1 in LabVPC
+
+  PublicSubnet2Id:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID of PublicSubnet2 in LabVPC
+
+Resources:
+
+  # ============================================================
+  # TASK 6.1 - Four Target Groups
+  # ============================================================
+
+  CustomerTgOne:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: customer-tg-one
+      TargetType: ip
+      Protocol: HTTP
+      Port: 8080
+      VpcId: !Ref VpcId
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  CustomerTgTwo:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: customer-tg-two
+      TargetType: ip
+      Protocol: HTTP
+      Port: 8080
+      VpcId: !Ref VpcId
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  EmployeeTgOne:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: employee-tg-one
+      TargetType: ip
+      Protocol: HTTP
+      Port: 8080
+      VpcId: !Ref VpcId
+      HealthCheckPath: /admin/suppliers
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  EmployeeTgTwo:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: employee-tg-two
+      TargetType: ip
+      Protocol: HTTP
+      Port: 8080
+      VpcId: !Ref VpcId
+      HealthCheckPath: /admin/suppliers
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  # ============================================================
+  # TASK 6.2 - Security Group
+  # ============================================================
+
+  MicroservicesSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: microservices-sg
+      GroupDescription: Security group for microservices ALB - allows HTTP 80 and 8080
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP port 80
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+          Description: HTTP port 8080
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  # ============================================================
+  # TASK 6.2 - Application Load Balancer
+  # ============================================================
+
+  MicroservicesALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: microservicesLB
+      Scheme: internet-facing
+      Type: application
+      IpAddressType: ipv4
+      Subnets:
+        - !Ref PublicSubnet1Id
+        - !Ref PublicSubnet2Id
+      SecurityGroups:
+        - !Ref MicroservicesSG
+
+  # ============================================================
+  # TASK 6.2 - Listener port 80
+  # Default: customer-tg-two
+  # Rule: /admin/* → employee-tg-two
+  # ============================================================
+
+  Listener80:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref MicroservicesALB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref CustomerTgTwo
+
+  Listener80AdminRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref Listener80
+      Priority: 1
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - /admin/*
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EmployeeTgTwo
+
+  # ============================================================
+  # TASK 6.2 - Listener port 8080
+  # Default: customer-tg-one
+  # Rule: /admin/* → employee-tg-one
+  # ============================================================
+
+  Listener8080:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref MicroservicesALB
+      Port: 8080
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref CustomerTgOne
+
+  Listener8080AdminRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref Listener8080
+      Priority: 1
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - /admin/*
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EmployeeTgOne
+
+Outputs:
+
+  ALBDnsName:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt MicroservicesALB.DNSName
+    Export:
+      Name: ALB-DNSName
+
+  ALBArn:
+    Description: ARN of the ALB
+    Value: !Ref MicroservicesALB
+    Export:
+      Name: ALB-Arn
+
+  MicroservicesSGId:
+    Description: Security Group ID for microservices
+    Value: !Ref MicroservicesSG
+    Export:
+      Name: MicroservicesSG-Id
+
+  CustomerTgOneArn:
+    Value: !Ref CustomerTgOne
+    Export:
+      Name: TG-CustomerOne-Arn
+
+  CustomerTgTwoArn:
+    Value: !Ref CustomerTgTwo
+    Export:
+      Name: TG-CustomerTwo-Arn
+
+  EmployeeTgOneArn:
+    Value: !Ref EmployeeTgOne
+    Export:
+      Name: TG-EmployeeOne-Arn
+
+  EmployeeTgTwoArn:
+    Value: !Ref EmployeeTgTwo
+    Export:
+      Name: TG-EmployeeTwo-Arn
+
+  Listener80Arn:
+    Value: !Ref Listener80
+    Export:
+      Name: Listener80-Arn
+
+  Listener8080Arn:
+    Value: !Ref Listener8080
+    Export:
+      Name: Listener8080-Arn
