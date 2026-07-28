@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Phase 5 - Task 5.2: ECS Fargate cluster (microservices-serverlesscluster).
+  Run this template if the ECS cluster needs to be recreated.
+  Prerequisites: LabVPC with PublicSubnet1 and PublicSubnet2 must exist.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: LabVPC ID. Find it at VPC > Your VPCs > filter by name "LabVPC".
+
+  PublicSubnet1Id:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID of PublicSubnet1 inside LabVPC.
+
+  PublicSubnet2Id:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID of PublicSubnet2 inside LabVPC.
+
+Resources:
+
+  MicroservicesCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: microservices-serverlesscluster
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+      ClusterSettings:
+        - Name: containerInsights
+          Value: disabled
+
+Outputs:
+
+  ClusterName:
+    Description: ECS Cluster name
+    Value: !Ref MicroservicesCluster
+    Export:
+      Name: ECS-ClusterName
+
+  ClusterArn:
+    Description: ECS Cluster ARN
+    Value: !GetAtt MicroservicesCluster.Arn
+    Export:
+      Name: ECS-ClusterArn
