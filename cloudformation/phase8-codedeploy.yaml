@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Phase 8 - Task 8.1:
+    - CodeDeploy application: microservices (ECS compute platform)
+    - Deployment group microservices-customer (blue/green, ECS)
+    - Deployment group microservices-employee (blue/green, ECS)
+
+Resources:
+
+  # ============================================================
+  # CodeDeploy Application
+  # ============================================================
+
+  MicroservicesApp:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: microservices
+      ComputePlatform: ECS
+
+  # ============================================================
+  # Deployment Group - customer microservice
+  # Production listener: HTTP:80  → customer-tg-two (blue)
+  # Test listener:       HTTP:8080 → customer-tg-one (green)
+  # ============================================================
+
+  CustomerDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    DependsOn: MicroservicesApp
+    Properties:
+      ApplicationName: !Ref MicroservicesApp
+      DeploymentGroupName: microservices-customer
+      ServiceRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/DeployRole"
+      DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      BlueGreenDeploymentConfiguration:
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+          WaitTimeInMinutes: 0
+        TerminateBlueInstancesOnDeploymentSuccess:
+          Action: TERMINATE
+          TerminationWaitTimeInMinutes: 5
+      LoadBalancerInfo:
+        TargetGroupPairInfoList:
+          - ProdTrafficRoute:
+              ListenerArns:
+                - !ImportValue Listener80-Arn
+            TestTrafficRoute:
+              ListenerArns:
+                - !ImportValue Listener8080-Arn
+            TargetGroups:
+              - Name: customer-tg-two
+              - Name: customer-tg-one
+      ECSServices:
+        - ClusterName: !ImportValue ECS-ClusterName
+          ServiceName: customer-microservice
+
+  # ============================================================
+  # Deployment Group - employee microservice
+  # Production listener: HTTP:80  → employee-tg-two (blue)
+  # Test listener:       HTTP:8080 → employee-tg-one (green)
+  # ============================================================
+
+  EmployeeDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    DependsOn: MicroservicesApp
+    Properties:
+      ApplicationName: !Ref MicroservicesApp
+      DeploymentGroupName: microservices-employee
+      ServiceRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/DeployRole"
+      DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      BlueGreenDeploymentConfiguration:
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+          WaitTimeInMinutes: 0
+        TerminateBlueInstancesOnDeploymentSuccess:
+          Action: TERMINATE
+          TerminationWaitTimeInMinutes: 5
+      LoadBalancerInfo:
+        TargetGroupPairInfoList:
+          - ProdTrafficRoute:
+              ListenerArns:
+                - !ImportValue Listener80-Arn
+            TestTrafficRoute:
+              ListenerArns:
+                - !ImportValue Listener8080-Arn
+            TargetGroups:
+              - Name: employee-tg-two
+              - Name: employee-tg-one
+      ECSServices:
+        - ClusterName: !ImportValue ECS-ClusterName
+          ServiceName: employee-microservice
+
+Outputs:
+
+  CodeDeployAppName:
+    Description: CodeDeploy application name
+    Value: !Ref MicroservicesApp
+    Export:
+      Name: CodeDeploy-AppName
+
+  CustomerDeploymentGroupName:
+    Description: Deployment group for customer microservice
+    Value: !Ref CustomerDeploymentGroup
+    Export:
+      Name: CodeDeploy-CustomerDG
+
+  EmployeeDeploymentGroupName:
+    Description: Deployment group for employee microservice
+    Value: !Ref EmployeeDeploymentGroup
+    Export:
+      Name: CodeDeploy-EmployeeDG
