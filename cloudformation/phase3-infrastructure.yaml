@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Phase 3 - Cloud9 IDE (MicroservicesIDE) + CodeCommit repository (microservices).
+  Run this template if the Cloud9 environment or CodeCommit repo need to be recreated.
+  Prerequisites: LabVPC and PublicSubnet1 must already exist (created by the lab).
+
+Parameters:
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >
+      ID of PublicSubnet1 inside LabVPC.
+      Find it at VPC > Subnets > filter by "Public" in the lab account.
+
+  OwnerArn:
+    Type: String
+    Description: >
+      ARN of the lab IAM user (e.g., arn:aws:iam::123456789012:user/awsstudent).
+      Leave empty to use the deploying principal automatically.
+    Default: ''
+
+Conditions:
+  HasOwnerArn: !Not [!Equals [!Ref OwnerArn, '']]
+
+Resources:
+
+  # Cloud9 IDE - MicroservicesIDE (t3.small, Amazon Linux 2023)
+  MicroservicesIDE:
+    Type: AWS::Cloud9::EnvironmentEC2
+    Properties:
+      Name: MicroservicesIDE
+      Description: Cloud9 IDE for microservices development
+      InstanceType: t3.small
+      SubnetId: !Ref SubnetId
+      AutomaticStopTimeMinutes: 30
+      ImageId: amazonlinux-2023-x86_64
+      OwnerArn: !If [HasOwnerArn, !Ref OwnerArn, !Ref AWS::NoValue]
+
+  # CodeCommit repository - microservices (source code for both microservices)
+  MicroservicesRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: microservices
+      RepositoryDescription: Source code for customer and employee microservices
+
+  # CodeCommit repository - deployment (AppSpec + task definitions for CodeDeploy)
+  DeploymentRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: deployment
+      RepositoryDescription: Deployment artifacts for CodeDeploy blue/green deployments
+
+Outputs:
+
+  Cloud9EnvironmentId:
+    Description: Cloud9 Environment ID (needed to find the security group)
+    Value: !Ref MicroservicesIDE
+    Export:
+      Name: MicroservicesIDE-EnvironmentId
+
+  Cloud9URL:
+    Description: Direct link to the Cloud9 IDE
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloud9/ide/${MicroservicesIDE}'
+
+  MicroservicesRepoCloneHTTPS:
+    Description: HTTPS URL to clone the microservices repository
+    Value: !GetAtt MicroservicesRepo.CloneUrlHttp
+    Export:
+      Name: MicroservicesRepo-CloneUrlHttp
+
+  DeploymentRepoCloneHTTPS:
+    Description: HTTPS URL to clone the deployment repository
+    Value: !GetAtt DeploymentRepo.CloneUrlHttp
+    Export:
+      Name: DeploymentRepo-CloneUrlHttp
