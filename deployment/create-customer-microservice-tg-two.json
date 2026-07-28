@@ -1,0 +1,29 @@
+{
+    "taskDefinition": "customer-microservice:1",
+    "cluster": "microservices-serverlesscluster",
+    "loadBalancers": [
+        {
+            "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:586263747258:targetgroup/customer-tg-two/8837397ab85540fe",
+            "containerName": "customer",
+            "containerPort": 8080
+        }
+    ],
+    "desiredCount": 1,
+    "launchType": "FARGATE",
+    "schedulingStrategy": "REPLICA",
+    "deploymentController": {
+        "type": "CODE_DEPLOY"
+    },
+    "networkConfiguration": {
+        "awsvpcConfiguration": {
+            "subnets": [
+                "subnet-0cf4a07c350d6fded",
+                "subnet-07ca4048628fe306b"
+            ],
+            "securityGroups": [
+                "sg-07f182f68073c21cb"
+            ],
+            "assignPublicIp": "ENABLED"
+        }
+    }
+}
